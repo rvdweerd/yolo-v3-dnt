@@ -64,7 +64,7 @@ def main():
 
     train_loader, test_loader, train_eval_loader = get_loaders(
         #train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/test.csv"
-        train_csv_path=config.DATASET + "/8examples.csv", test_csv_path=config.DATASET + "/8examples.csv"
+        train_csv_path=config.DATASET + "/examples.csv", test_csv_path=config.DATASET + "/examples.csv"
     )
 
     if config.LOAD_MODEL:
@@ -77,10 +77,13 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).unsqueeze(1).repeat(1, 3, 2)
     ).to(config.DEVICE)
 
+    model.numTrainableParameters()
+    print(config.DEVICE)
+
     for epoch in range(config.NUM_EPOCHS):
-        plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
-        #train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
-        train_fn(test_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
+        #plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
+        train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
+        #train_fn(test_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
 
         if config.SAVE_MODEL:
             save_checkpoint(model, optimizer, filename=f"checkpoint.pth.tar")
@@ -110,6 +113,7 @@ def main():
                 num_classes=config.NUM_CLASSES,
             )
             print(f"MAP: {mapval.item()}")
+    plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
 
 
 

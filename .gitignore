@@ -1,2 +1,5 @@
 .vscode
 VOCdevkit
+__pycache__
+PASCAL_VOC
+DNT_2

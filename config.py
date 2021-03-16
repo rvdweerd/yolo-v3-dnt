@@ -5,16 +5,17 @@ import torch
 from albumentations.pytorch import ToTensorV2
 from utils import seed_everything
 
-DATASET = 'PASCAL_VOC'
+#DATASET = 'PASCAL_VOC'
+DATASET = 'DNT_2'
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # seed_everything()  # If you want deterministic behavior
 NUM_WORKERS = 4
 BATCH_SIZE = 32
 IMAGE_SIZE = 416
-NUM_CLASSES = 80
-LEARNING_RATE = 3e-5
+NUM_CLASSES = 2#80
+LEARNING_RATE = 1e-4#3e-5
 WEIGHT_DECAY = 1e-4
-NUM_EPOCHS = 100
+NUM_EPOCHS = 200#100
 CONF_THRESHOLD = 0.6
 MAP_IOU_THRESH = 0.5
 NMS_IOU_THRESH = 0.45
@@ -75,6 +76,11 @@ test_transforms = A.Compose(
     ],
     bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[]),
 )
+
+DNT_2_CLASSES = [
+    "ball",
+    "robot"
+]
 
 PASCAL_CLASSES = [
     "aeroplane",
