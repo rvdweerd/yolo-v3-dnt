@@ -13,16 +13,16 @@ NUM_WORKERS = 4
 BATCH_SIZE = 32
 IMAGE_SIZE = 416
 NUM_CLASSES = 2#80
-LEARNING_RATE = 7e-5#3e-5
+LEARNING_RATE = 2e-5#3e-5
 WEIGHT_DECAY = 1e-4
-NUM_EPOCHS = 10#100
+NUM_EPOCHS = 100#100
 CONF_THRESHOLD = 0.6
 MAP_IOU_THRESH = 0.5
 NMS_IOU_THRESH = 0.45
 S = [IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8]
 PIN_MEMORY = True
-LOAD_MODEL = False
-SAVE_MODEL = False
+LOAD_MODEL = True
+SAVE_MODEL = True
 CHECKPOINT_FILE = "checkpoint.pth.tar"
 IMG_DIR = DATASET + "/images/"
 LABEL_DIR = DATASET + "/labels/"
@@ -34,7 +34,7 @@ ANCHORS = [
 ]  # Note these have been rescaled to be between [0, 1]
 
 
-scale = 1#1.1
+scale = 1.1#1.1
 train_transforms = A.Compose(
     [
         A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale)),
@@ -55,7 +55,7 @@ train_transforms = A.Compose(
             p=1.0,
         ),
         A.HorizontalFlip(p=0.5),
-        A.Blur(p=0.1),
+        A.Blur(p=0.2),
         A.CLAHE(p=0.1),
         A.Posterize(p=0.1),
         A.ToGray(p=0.1),

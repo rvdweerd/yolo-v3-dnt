@@ -64,7 +64,7 @@ def main():
 
     train_loader, test_loader, train_eval_loader = get_loaders(
         #train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/test.csv"
-        train_csv_path=config.DATASET + "/examples.csv", test_csv_path=config.DATASET + "/examples.csv"
+        train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/examples.csv"
     )
 
     if config.LOAD_MODEL:
@@ -79,7 +79,7 @@ def main():
 
     model.numTrainableParameters()
     print(config.DEVICE)
-
+    plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
     for epoch in range(config.NUM_EPOCHS):
         #plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
         train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
