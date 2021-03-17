@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pandas as pd
 import torch
+import warnings
 
 from PIL import Image, ImageFile
 from torch.utils.data import Dataset, DataLoader
@@ -41,7 +42,17 @@ class YOLODataset(Dataset):
 
     def __getitem__(self, index):
         label_path = os.path.join(self.label_dir, self.annotations.iloc[index, 1])
-        bboxes = np.roll(np.loadtxt(fname=label_path, delimiter=" ", ndmin=2), 4, axis=1).tolist()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            bboxes = np.roll(np.loadtxt(fname=label_path, delimiter=" ", ndmin=2), 4, axis=1).tolist()
+        # print(label_path)
+        # for box in bboxes:
+        #     print(box,max(box))
+        #     if max(box) > 1.0:
+        #         print(label_path,'##################################')
+        #         assert False
+            
+
         img_path = os.path.join(self.img_dir, self.annotations.iloc[index, 0])
         image = np.array(Image.open(img_path).convert("RGB"))
 
