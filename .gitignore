@@ -5,4 +5,5 @@ PASCAL_VOC
 DNT_2
 backup
 checkpoint.pht.tar
-dataset_gen/imageset_287
+datasets_txt
+datasets_img

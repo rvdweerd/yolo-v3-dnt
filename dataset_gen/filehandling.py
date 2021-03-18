@@ -2,14 +2,14 @@ import os
 
 create=False
 if create:
-    file_obj = open(r"annotations_.txt","r")
+    file_obj = open(r"dataset_gen/annotations_.txt","r")
     #file_obj.write("test")
     lines=file_obj.readlines()
     while lines[0][0] != lines[1][0]:
         lines[0]=lines[0][1:]
-    if not os.path.isdir('datasets'):
-            os.mkdir('datasets')
-    listfile=open("datasets/listfile.txt",'w')
+    if not os.path.isdir('datasets_txt'):
+            os.mkdir('datasets_txt')
+    listfile=open("datasets_txt/listfile.txt",'w')
     fname_old = None
 
     for line in lines:
@@ -19,7 +19,7 @@ if create:
         fname = fname_orig.replace('.png','.txt').replace('.jpg','.txt')
         
         
-        file_obj=open("datasets/"+fname,"a")
+        file_obj=open("datasets_txt/"+fname,"a")
 
         if fname_orig!=fname_old or fname_old == None:
             
@@ -33,12 +33,37 @@ if create:
     listfile.close()
 
 import cv2
-
-listfile=open("datasets/listfile.txt",'r')
+import numpy as np
+listfile=open("datasets_txt/listfile.txt",'r')
 lines=listfile.readlines()
-for line in lines[:10]:
+
+fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+video=cv2.VideoWriter('video.avi', fourcc, 15,(640,480))
+
+for line in lines[700:800]:
     filenames=line.split(',')
-    img=cv.imread('datasets/'+filenames[0])
-    cv2.imshow('image',img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    img=cv2.imread('datasets_img/'+filenames[0])
+    boxfile=open("datasets_txt/"+filenames[1].replace('\n',''))
+    lines=boxfile.readlines()
+    for line in lines:
+        line=line.split(',')
+        cat=float(line[0])
+        xrel=float(line[1])
+        yrel=float(line[2])
+        wrel=float(line[3])
+        hrel=float(line[4])
+        h,w,c=img.shape
+        x0=int((xrel-0.5*wrel)*w)
+        y0=int((yrel-0.5*hrel)*h)
+        x1=int((xrel+0.5*wrel)*w)
+        y1=int((yrel+0.5*hrel)*h)
+
+        cv2.rectangle(img,(x0,y0),(x1,y1) ,(0,255,0),2)
+    video.write(img)
+    #cv2.imshow('img',img)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
+
+cv2.destroyAllWindows()
+video.release()
+    
