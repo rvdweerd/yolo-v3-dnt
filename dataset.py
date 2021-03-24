@@ -9,7 +9,7 @@ from PIL import Image, ImageFile
 from torch.utils.data import Dataset, DataLoader
 from utils import (
     iou_width_height as iou,
-    non_max_suppression as nms,
+    non_max_suppression as nms
 )
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -26,6 +26,7 @@ class YOLODataset(Dataset):
         transform=None,
     ):
         self.annotations = pd.read_csv(csv_file)
+        self.annotations.sort_values('img',inplace=True)
         self.img_dir = img_dir
         self.label_dir = label_dir
         self.image_size = image_size
@@ -91,7 +92,7 @@ class YOLODataset(Dataset):
                 elif not anchor_taken and iou_anchors[anchor_idx] > self.ignore_iou_thresh:
                     targets[scale_idx][anchor_on_scale, i, j, 0] = -1  # ignore prediction
 
-        return image, tuple(targets)
+        return image, tuple(targets), self.annotations.iloc[index, 0]
 
 
 def test():

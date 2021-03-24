@@ -1,10 +1,10 @@
 import os
 
 create_annotations=True
-create_video=True
-#annotation_file="dataset_gen/annotations_243_.txt"
-annotation_file="dataset_gen/annotations_287_done.txt"
-#annotation_file="dataset_gen/annotations_310_.txt"
+create_video=False
+
+annotation_file="dataset_gen/annotations_pos_br.txt"
+
 if create_annotations:
     file_obj = open(annotation_file,"r")
     #file_obj.write("test")
@@ -30,7 +30,7 @@ if create_annotations:
             listfile.write(','.join([fname_orig,fname]))
             listfile.write('\n')
         
-        str=','.join(tokens1[1:])
+        str=' '.join(tokens1[1:])
         if str != '':
             file_obj.write(str)
         
@@ -47,7 +47,7 @@ if create_video:
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     filenames=lines[0].split(',')
-    img=cv2.imread('datasets_img/'+filenames[0])
+    img=cv2.imread('../robodetect-imgs/'+filenames[0])
     h,w,c=img.shape 
     print('img shape',w,h,c)
     video=cv2.VideoWriter('video.avi', fourcc, 15,(640,480))
@@ -55,7 +55,7 @@ if create_video:
 
     for line in lines:#[:200]:
         filenames=line.split(',')
-        img=cv2.imread('datasets_img/'+filenames[0])
+        img=cv2.imread('../robodetect-imgs/'+filenames[0])
         
         boxfile=open("datasets_txt/"+filenames[1].replace('\n',''))
         lines=boxfile.readlines()

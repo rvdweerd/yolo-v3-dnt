@@ -13,7 +13,7 @@ NUM_WORKERS = 4
 BATCH_SIZE = 32
 IMAGE_SIZE = 416
 NUM_CLASSES = 2#80
-LEARNING_RATE = 2e-5#3e-5
+LEARNING_RATE = 3e-5#3e-5
 WEIGHT_DECAY = 1e-4
 NUM_EPOCHS = 100#100
 CONF_THRESHOLD = 0.6
@@ -22,8 +22,9 @@ NMS_IOU_THRESH = 0.45
 S = [IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8]
 PIN_MEMORY = True
 LOAD_MODEL = True
-SAVE_MODEL = True
+SAVE_MODEL = False
 CHECKPOINT_FILE = "checkpoint.pth.tar"
+
 IMG_DIR = DATASET + "/images/"
 LABEL_DIR = DATASET + "/labels/"
 
@@ -44,22 +45,22 @@ train_transforms = A.Compose(
             border_mode=cv2.BORDER_CONSTANT,
         ),
         A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE),
-        A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0.4),
+        A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0),#.4),
         A.OneOf(
             [
                 A.ShiftScaleRotate(
-                    rotate_limit=10, p=0.4, border_mode=cv2.BORDER_CONSTANT
-                ),
-                A.IAAAffine(shear=10, p=0.4, mode="constant"),
+                    rotate_limit=10, p=0.01, border_mode=cv2.BORDER_CONSTANT
+                ),#0.4
+                A.IAAAffine(shear=10, p=0.01, mode="constant"), #0.4
             ],
-            p=1.0,
+            p=0,#1.0,
         ),
-        A.HorizontalFlip(p=0.5),
-        A.Blur(p=0.2),
-        A.CLAHE(p=0.1),
-        A.Posterize(p=0.1),
-        A.ToGray(p=0.1),
-        A.ChannelShuffle(p=0.05),
+        A.HorizontalFlip(p=0),#0.5),
+        A.Blur(p=0),#.2),
+        A.CLAHE(p=0),#.1),
+        A.Posterize(p=0),#.1),
+        A.ToGray(p=0),#.1),
+        A.ChannelShuffle(p=0),#.05),
         A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),
         ToTensorV2(),
     ],

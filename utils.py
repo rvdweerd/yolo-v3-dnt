@@ -9,7 +9,7 @@ import torch
 from collections import Counter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+import cv2
 
 def iou_width_height(boxes1, boxes2):
     """
@@ -232,7 +232,7 @@ def mean_average_precision(
     return sum(average_precisions) / len(average_precisions)
 
 
-def plot_image(image, boxes):
+def plot_image(image, boxes, save_img=False):
     """Plots predicted bounding boxes on the image"""
     cmap = plt.get_cmap("tab20b")
     class_labels = config.PASCAL_CLASSES if config.DATASET=='PASCAL_VOC' else config.DNT_2_CLASSES
@@ -273,10 +273,98 @@ def plot_image(image, boxes):
             verticalalignment="top",
             bbox={"color": colors[int(class_pred)], "pad": 0},
         )
+    if save_img:
+        plt.savefig("test.png")
+    else:
+        plt.show()
 
-    plt.show()
+#from matplotlib.backends.backend_agg import FigureCanvasAgg
+#from matplotlib.figure import Figure
+def plot_bboxes_on_img(image, bbox_map, im_name):
+    class_labels = config.PASCAL_CLASSES if config.DATASET=='PASCAL_VOC' else config.DNT_2_CLASSES
 
+    cmap = plt.get_cmap("tab20b")
+    colors = [cmap(i) for i in np.linspace(0, 1, len(class_labels))]
+    
+    im = np.array(image)
+    height, width, _ = im.shape
+    fig, ax = plt.subplots(1)
+    #canvas = FigureCanvasAgg(fig)
+    # Display the image
+    ax.imshow(im)
+    #plt.savefig("tmp.png")
+    
+    #cv2.imshow('img',im)
+    #cv2.waitkey(0)
+    #cv2.destroyAllWindows()
 
+    #im=cv2.imread("tmp.png")
+    #cv2.imwrite("test2.png",im)
+
+    # Create a gt patches
+    for box in bbox_map['gt_bboxes']:
+        assert len(box) == 6, "box should contain class pred, confidence, x, y, width, height"
+        class_pred = box[0]
+        box = box[2:]
+        upper_left_x = box[0] - box[2] / 2
+        upper_left_y = box[1] - box[3] / 2
+        rect = patches.Rectangle(
+            (upper_left_x * width, upper_left_y * height),
+            box[2] * width,
+            box[3] * height,
+            linewidth=1,
+            #edgecolor=colors[int(class_pred)],
+            edgecolor=(1.,1.,1.,1.),
+            facecolor="none",
+        )
+        # Add the patch to the Axes
+        ax.add_patch(rect)
+        #plt.text(
+        #    upper_left_x * width,
+        #    upper_left_y * height,
+        #    s=class_labels[int(class_pred)],
+        #    color="white",
+        #    verticalalignment="top",
+        #    bbox={"color": colors[int(class_pred)], "pad": 0},
+        #)
+    
+    # Create a prediction patches
+    for box in bbox_map['pred_bboxes']:
+        assert len(box) == 6, "box should contain class pred, confidence, x, y, width, height"
+        class_pred = box[0]
+        box = box[2:]
+        upper_left_x = box[0] - box[2] / 2
+        upper_left_y = box[1] - box[3] / 2
+        rect = patches.Rectangle(
+            (upper_left_x * width, upper_left_y * height),
+            box[2] * width,
+            box[3] * height,
+            linewidth=1,
+            edgecolor=colors[int(class_pred)],
+            #edgecolor=(1.,1.,1.,1.),
+            facecolor="none",
+        )
+        # Add the patch to the Axes
+        ax.add_patch(rect)
+        #plt.text(
+        #    upper_left_x * width,
+        #    upper_left_y * height,
+        #    s=class_labels[int(class_pred)],
+        #    color="white",
+        #    verticalalignment="top",
+        #    bbox={"color": colors[int(class_pred)], "pad": 0},
+        #)
+    plt.text(
+        10,10,im_name,color="white"
+    )
+    plt.savefig("tmp.png")
+    plt.close()
+    #canvas.draw()
+    #buf=canvas.buffer_rgba()
+    #x=np.asarray(buf)
+    x=cv2.imread("tmp.png")
+    return x
+    
 def get_evaluation_bboxes(
     loader,
     model,
@@ -291,8 +379,9 @@ def get_evaluation_bboxes(
     train_idx = 0
     all_pred_boxes = []
     all_true_boxes = []
-    for batch_idx, (x, labels) in enumerate(tqdm(loader)):
+    for batch_idx, (x, labels, im_name) in enumerate(tqdm(loader)):
         x = x.to(device)
+        #print(im_name)
 
         with torch.no_grad():
             predictions = model(x)
@@ -380,8 +469,8 @@ def check_class_accuracy(model, loader, threshold):
     tot_obj, correct_obj = 0, 0
 
     for idx, (x, y) in enumerate(tqdm(loader)):
-        if idx == 100:
-            break
+        #if idx == 100:
+        #    break
         x = x.to(config.DEVICE)
         with torch.no_grad():
             out = model(x)
@@ -481,24 +570,24 @@ def get_loaders(train_csv_path, test_csv_path):
         drop_last=False,
     )
 
-    train_eval_dataset = YOLODataset(
-        train_csv_path,
+    eval_dataset = YOLODataset(
+        test_csv_path,
         transform=config.test_transforms,
         S=[IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8],
         img_dir=config.IMG_DIR,
         label_dir=config.LABEL_DIR,
         anchors=config.ANCHORS,
     )
-    train_eval_loader = DataLoader(
-        dataset=train_eval_dataset,
-        batch_size=config.BATCH_SIZE,
+    eval_loader = DataLoader(
+        dataset=eval_dataset,
+        batch_size=32,
         num_workers=config.NUM_WORKERS,
         pin_memory=config.PIN_MEMORY,
         shuffle=False,
         drop_last=False,
     )
 
-    return train_loader, test_loader, train_eval_loader
+    return train_loader, test_loader, eval_loader
 
 def plot_couple_examples(model, loader, thresh, iou_thresh, anchors):
     model.eval()
@@ -519,7 +608,7 @@ def plot_couple_examples(model, loader, thresh, iou_thresh, anchors):
 
         model.train()
 
-    for i in range(batch_size):
+    for i in range(32):
         nms_boxes = non_max_suppression(
             bboxes[i], iou_threshold=iou_thresh, threshold=thresh, box_format="midpoint",
         )

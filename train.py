@@ -64,7 +64,7 @@ def main():
 
     train_loader, test_loader, train_eval_loader = get_loaders(
         #train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/test.csv"
-        train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/examples.csv"
+        train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/test.csv"#examples_small.csv"
     )
 
     if config.LOAD_MODEL:
@@ -79,7 +79,25 @@ def main():
 
     model.numTrainableParameters()
     print(config.DEVICE)
-    plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
+    
+    check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
+    pred_boxes, true_boxes = get_evaluation_bboxes(
+                test_loader,
+                model,
+                iou_threshold=config.NMS_IOU_THRESH,
+                anchors=config.ANCHORS,
+                threshold=config.CONF_THRESHOLD,
+            )
+    mapval = mean_average_precision(
+        pred_boxes,
+        true_boxes,
+        iou_threshold=config.MAP_IOU_THRESH,
+        box_format="midpoint",
+        num_classes=config.NUM_CLASSES,
+    )
+    print(f"MAP: {mapval.item()}")
+    plot_couple_examples(model, train_loader, 0.6, 0.5, scaled_anchors)
+
     for epoch in range(config.NUM_EPOCHS):
         #plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
         train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
@@ -88,13 +106,13 @@ def main():
         if config.SAVE_MODEL:
             save_checkpoint(model, optimizer, filename=f"checkpoint.pth.tar")
 
-        #print(f"Currently epoch {epoch}")
+        print(f"Currently epoch {epoch}")
         #print("On Train Eval loader:")
         #check_class_accuracy(model, train_eval_loader, threshold=config.CONF_THRESHOLD)
         #print("On Train loader:")
         #check_class_accuracy(model, train_loader, threshold=config.CONF_THRESHOLD)
 
-        if epoch % 10 == 0 and epoch > 0:
+        if epoch % 2 == 0 and epoch > 0:
             print("On Test loader:")
             check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
 
