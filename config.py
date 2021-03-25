@@ -23,7 +23,8 @@ S = [IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8]
 PIN_MEMORY = True
 LOAD_MODEL = True
 SAVE_MODEL = False
-CHECKPOINT_FILE = "checkpoint.pth.tar"
+#CHECKPOINT_FILE = "checkpoint.pth.tar"
+CHECKPOINT_FILE = "checkpoint-94%map-e30_lr3e-5.pth.tar"
 
 IMG_DIR = DATASET + "/images/"
 LABEL_DIR = DATASET + "/labels/"
@@ -49,16 +50,16 @@ train_transforms = A.Compose(
         A.OneOf(
             [
                 A.ShiftScaleRotate(
-                    rotate_limit=10, p=0.01, border_mode=cv2.BORDER_CONSTANT
+                    rotate_limit=10, p=0.2, border_mode=cv2.BORDER_CONSTANT
                 ),#0.4
-                A.IAAAffine(shear=10, p=0.01, mode="constant"), #0.4
+                A.IAAAffine(shear=10, p=0.2, mode="constant"), #0.4
             ],
-            p=0,#1.0,
+            p=1.0,#1.0,
         ),
-        A.HorizontalFlip(p=0),#0.5),
-        A.Blur(p=0),#.2),
-        A.CLAHE(p=0),#.1),
-        A.Posterize(p=0),#.1),
+        A.HorizontalFlip(p=0.5),#0.5),
+        A.Blur(p=0.1),#.2),
+        A.CLAHE(p=0.1),#.1),
+        A.Posterize(p=0.1),#.1),
         A.ToGray(p=0),#.1),
         A.ChannelShuffle(p=0),#.05),
         A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),

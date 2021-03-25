@@ -22,8 +22,20 @@ from utils import (
 )
 from loss import YoloLoss
 import cv2
+import numpy as np
 
 torch.backends.cudnn.benchmark = True
+
+def load_dn():
+	#net = cv2.dnn.readNet("~/darknet_training/doubleclass/backup/tyv3_94-91.weights", "~/darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg")
+    #net = cv2.dnn.readNetFromDarknet("~/darknet_training/doubleclass/backup/yolov3-tiny_3l_final.weights", "~/darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg")
+    net = cv2.dnn.readNetFromDarknet("../darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg","../darknet_training/doubleclass/backup/yolov3-tiny_3l_final.weights")
+
+    classes = ['ball','robot']
+    layers_names = net.getLayerNames()
+    output_layers = [layers_names[i[0]-1] for i in net.getUnconnectedOutLayers()]
+    colors = np.random.uniform(0, 255, size=(len(classes), 3))
+    return net, classes, colors, output_layers
 
 
 def evaluate_fn(eval_loader, model, scaled_anchors):
@@ -45,11 +57,12 @@ def evaluate_fn(eval_loader, model, scaled_anchors):
 
 def main():
     model = YOLOv3(num_classes=config.NUM_CLASSES).to(config.DEVICE)
-    
+    dnmodel,_,_,outlayers = load_dn()
+
 
     train_loader, test_loader, eval_loader = get_loaders(
         #train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/test.csv"
-        train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/train_old.csv"#examples_small.csv"
+        train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/test.csv"#examples_small.csv"
     )
     # load checkpoint
     print("=> Loading checkpoint")
@@ -78,7 +91,7 @@ def main():
         images_bbox_map[tbox[0]]['gt_bboxes'].append(tbox[1:])
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    video=cv2.VideoWriter('video2.avi', fourcc, 1,(640,480))
+    video=cv2.VideoWriter('video2.avi', fourcc, 2, (640,480))
 
     img_count=0
     for batch_idx, (x, labels, im_name) in enumerate(tqdm(eval_loader)):

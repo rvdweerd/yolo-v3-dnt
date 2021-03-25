@@ -24,9 +24,11 @@ class YOLODataset(Dataset):
         S=[13,26,52], # grid sizes
         C=20,
         transform=None,
+        sort_imgs=False
     ):
         self.annotations = pd.read_csv(csv_file)
-        self.annotations.sort_values('img',inplace=True)
+        if sort_imgs:
+            self.annotations.sort_values('img',inplace=True)
         self.img_dir = img_dir
         self.label_dir = label_dir
         self.image_size = image_size

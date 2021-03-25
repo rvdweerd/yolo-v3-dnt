@@ -283,9 +283,10 @@ def plot_image(image, boxes, save_img=False):
 def plot_bboxes_on_img(image, bbox_map, im_name):
     class_labels = config.PASCAL_CLASSES if config.DATASET=='PASCAL_VOC' else config.DNT_2_CLASSES
 
-    cmap = plt.get_cmap("tab20b")
-    colors = [cmap(i) for i in np.linspace(0, 1, len(class_labels))]
-    
+    #cmap = plt.get_cmap("tab20b")
+    #colors = [cmap(i) for i in np.linspace(0, 1, len(class_labels))]
+    colors=["red","blue"]
+
     im = np.array(image)
     height, width, _ = im.shape
     fig, ax = plt.subplots(1)
@@ -340,7 +341,7 @@ def plot_bboxes_on_img(image, bbox_map, im_name):
             box[2] * width,
             box[3] * height,
             linewidth=1,
-            edgecolor=colors[int(class_pred)],
+            edgecolor=colors[int(class_pred)],#"red",#colors[int(class_pred)],
             #edgecolor=(1.,1.,1.,1.),
             facecolor="none",
         )
@@ -355,8 +356,18 @@ def plot_bboxes_on_img(image, bbox_map, im_name):
         #    bbox={"color": colors[int(class_pred)], "pad": 0},
         #)
     plt.text(
-        10,10,im_name,color="white"
+        10,20,im_name,color="white"
     )
+    rect_gt    = patches.Rectangle( (10,30),10,10, linewidth=1, edgecolor="white",facecolor="none")
+    rect_ball  = patches.Rectangle( (10,373),10,10, linewidth=1, edgecolor="red",facecolor="none")
+    rect_robot = patches.Rectangle( (10,393),10,10, linewidth=1, edgecolor="blue",facecolor="none")
+    ax.add_patch(rect_gt)
+    ax.add_patch(rect_ball)
+    ax.add_patch(rect_robot)
+    plt.text( 25,40, "= Ground Truth",color="white")
+    plt.text( 25,383,"= Predicted Ball",color="white")
+    plt.text( 25,403,"= Predicted Robot",color="white")
+
     plt.savefig("tmp.png")
     plt.close()
     #canvas.draw()
@@ -468,7 +479,7 @@ def check_class_accuracy(model, loader, threshold):
     tot_noobj, correct_noobj = 0, 0
     tot_obj, correct_obj = 0, 0
 
-    for idx, (x, y) in enumerate(tqdm(loader)):
+    for idx, (x, y, im_name) in enumerate(tqdm(loader)):
         #if idx == 100:
         #    break
         x = x.to(config.DEVICE)
@@ -577,10 +588,11 @@ def get_loaders(train_csv_path, test_csv_path):
         img_dir=config.IMG_DIR,
         label_dir=config.LABEL_DIR,
         anchors=config.ANCHORS,
+        sort_imgs=True
     )
     eval_loader = DataLoader(
         dataset=eval_dataset,
-        batch_size=32,
+        batch_size=config.BATCH_SIZE,
         num_workers=config.NUM_WORKERS,
         pin_memory=config.PIN_MEMORY,
         shuffle=False,
@@ -591,7 +603,7 @@ def get_loaders(train_csv_path, test_csv_path):
 
 def plot_couple_examples(model, loader, thresh, iou_thresh, anchors):
     model.eval()
-    x, y = next(iter(loader))
+    x, y, _ = next(iter(loader))
     if torch.cuda.is_available():
         x = x.to("cuda")
     with torch.no_grad():
@@ -608,7 +620,7 @@ def plot_couple_examples(model, loader, thresh, iou_thresh, anchors):
 
         model.train()
 
-    for i in range(32):
+    for i in range(x.shape[0]):
         nms_boxes = non_max_suppression(
             bboxes[i], iou_threshold=iou_thresh, threshold=thresh, box_format="midpoint",
         )

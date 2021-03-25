@@ -1,9 +1,9 @@
 import os
 
 create_annotations=True
-create_video=False
+create_video=True
 
-annotation_file="dataset_gen/annotations_pos_br.txt"
+annotation_file="dataset_gen/annotations_twig_correct.txt"
 
 if create_annotations:
     file_obj = open(annotation_file,"r")
@@ -60,7 +60,7 @@ if create_video:
         boxfile=open("datasets_txt/"+filenames[1].replace('\n',''))
         lines=boxfile.readlines()
         for line in lines:
-            line=line.split(',')
+            line=line.replace('\n','').split(' ')
             cat=float(line[0])
             xrel=float(line[1])
             yrel=float(line[2])
