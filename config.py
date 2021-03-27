@@ -21,10 +21,10 @@ MAP_IOU_THRESH = 0.5
 NMS_IOU_THRESH = 0.45
 S = [IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8]
 PIN_MEMORY = True
-LOAD_MODEL = True
-SAVE_MODEL = False
-#CHECKPOINT_FILE = "checkpoint.pth.tar"
-CHECKPOINT_FILE = "checkpoint-94%map-e30_lr3e-5.pth.tar"
+LOAD_MODEL = False
+SAVE_MODEL = True
+CHECKPOINT_FILE = "checkpoint.pth.tar"
+#CHECKPOINT_FILE = "checkpoint-94%map-e30_lr3e-5.pth.tar"
 
 IMG_DIR = DATASET + "/images/"
 LABEL_DIR = DATASET + "/labels/"

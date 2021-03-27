@@ -79,14 +79,16 @@ def main():
     ).to(config.DEVICE)
     print(config.DEVICE)
 
-    pred_boxes_darknet, true_boxes_darknet = get_evaluation_bboxes_darknet(
-                eval_loader,
-                dnmodel,
-                outlayers,
-                iou_threshold=config.NMS_IOU_THRESH,
-                anchors=config.ANCHORS,
-                threshold=config.CONF_THRESHOLD,
-            )
+    darknet_eval=True
+    if darknet_eval:
+        pred_boxes_darknet, true_boxes_darknet = get_evaluation_bboxes_darknet(
+                    eval_loader,
+                    dnmodel,
+                    outlayers,
+                    iou_threshold=config.NMS_IOU_THRESH,
+                    anchors=config.ANCHORS,
+                    threshold=config.CONF_THRESHOLD,
+                )
 
 
     pred_boxes, true_boxes = get_evaluation_bboxes(
