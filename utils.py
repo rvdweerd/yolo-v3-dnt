@@ -433,6 +433,106 @@ def get_evaluation_bboxes(
     model.train()
     return all_pred_boxes, all_true_boxes
 
+def get_evaluation_bboxes_darknet(
+    loader,
+    model,
+    outputLayers,
+    iou_threshold,
+    anchors,
+    threshold,
+    box_format="midpoint",
+    device="cuda",
+):
+    # make sure model is in eval before get bboxes
+    #model.eval()
+    train_idx = 0
+    all_pred_boxes = []
+    all_true_boxes = []
+    model.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+
+    img=cv2.imread("DNT_2/images/frame_a_2760.png")
+    img = cv2.resize(img, None, fx=416/640, fy=416/640)
+    img=cv2.copyMakeBorder(img,0,416-312,0,0,cv2.BORDER_CONSTANT)
+
+    blob = cv2.dnn.blobFromImage(img, 1/255.0, (416, 416), swapRB=True, crop=False)
+    model.setInput(blob)
+    output=model.forward(outputLayers)
+    np.argmax(output[0][:,-1])
+    np.argmax(output[1][:,-1])
+
+    for batch_idx, (x, labels, im_name) in enumerate(tqdm(loader)):
+        
+
+        #print(im_name)
+        #x_dnn=np.moveaxis(x.numpy().astype(np.uint8),[1,2,3],[3,1,2])
+        x_dnn=np.moveaxis(x.numpy(),[1,2,3],[3,1,2])
+        #x_dnn*255 = 416 size, resized with border
+        
+        x = x.to(device)
+        #with torch.no_grad():
+        #    predictions = model(x)
+        #blob = cv2.dnn.blobFromImages(x_dnn, scalefactor=0.00392, size=(416, 416), mean=(0, 0, 0), swapRB=True, crop=False)
+
+        blob = cv2.dnn.blobFromImages(x_dnn, scalefactor=1, size=(416, 416), mean=(0, 0, 0), swapRB=False, crop=False)
+        model.setInput(blob)
+        outputs = model.forward(outputLayers)        
+        
+        #model.setInput(x.numpy())
+        #outputs=model.forward(outputLayers)
+
+
+        # output is [a_1,a_2,a_3] with a_i = numpy.ndarray of float32
+        # a_1 has size (bsize,507,7)  , 507 = 13*13*3, yolo gridscale 13, 3 anchor boxes per gridcell, output vector dim=7 (p_c,x,y,w,h,c1,c2)
+        # a_2 has size (bsize,2028,7) ,2028 = 26*26*3
+        # a_3 has size (bsize,8112,7) ,8112 = 52*52*3
+
+        # STILL NEED TO FIX CODE BELOW
+        # predictions below is [a_1,a_2,a_3] with a_i = torch tensor
+        # a_1 has size (bsize,3,13,13,7) where 3=#anchor boxes per gridcell, 13*13 gridsize, output vector dim=7,
+        # 
+        #  
+        
+        batch_size = x.shape[0]
+        predictions=[
+            torch.tensor(outputs[0].reshape(batch_size,3,13,13,7)).to(device), # TO DO: derive dimensions from data, not hardcoded
+            torch.tensor(outputs[1].reshape(batch_size,3,26,26,7)).to(device),
+            torch.tensor(outputs[2].reshape(batch_size,3,52,52,7)).to(device),
+        ]
+        #return [],[]
+        bboxes = [[] for _ in range(batch_size)]
+        for i in range(3):
+            S = predictions[i].shape[2]
+            anchor = torch.tensor([*anchors[i]]).to(device) * S
+            boxes_scale_i = cells_to_bboxes(
+                predictions[i], anchor, S=S, is_preds=True
+            )
+            for idx, (box) in enumerate(boxes_scale_i):
+                bboxes[idx] += box
+
+        # we just want one bbox for each label, not one for each scale
+        true_bboxes = cells_to_bboxes(
+            labels[2], anchor, S=S, is_preds=False
+        )
+
+        for idx in range(batch_size):
+            nms_boxes = non_max_suppression(
+                bboxes[idx],
+                iou_threshold=iou_threshold,
+                threshold=threshold,
+                box_format=box_format,
+            )
+
+            for nms_box in nms_boxes:
+                all_pred_boxes.append([train_idx] + nms_box)
+
+            for box in true_bboxes[idx]:
+                if box[1] > threshold:
+                    all_true_boxes.append([train_idx] + box)
+
+            train_idx += 1
+
+    #model.train()
+    return all_pred_boxes, all_true_boxes
 
 def cells_to_bboxes(predictions, anchors, S, is_preds=True):
     """
@@ -456,6 +556,8 @@ def cells_to_bboxes(predictions, anchors, S, is_preds=True):
         box_predictions[..., 0:2] = torch.sigmoid(box_predictions[..., 0:2])
         box_predictions[..., 2:] = torch.exp(box_predictions[..., 2:]) * anchors
         scores = torch.sigmoid(predictions[..., 0:1])
+        #CHECK!!!!
+        #scores=predictions[...,0:1]
         best_class = torch.argmax(predictions[..., 5:], dim=-1).unsqueeze(-1)
     else:
         scores = predictions[..., 0:1]

@@ -12,6 +12,7 @@ from utils import (
     mean_average_precision,
     cells_to_bboxes,
     get_evaluation_bboxes,
+    get_evaluation_bboxes_darknet,
     save_checkpoint,
     load_checkpoint,
     check_class_accuracy,
@@ -29,13 +30,16 @@ torch.backends.cudnn.benchmark = True
 def load_dn():
 	#net = cv2.dnn.readNet("~/darknet_training/doubleclass/backup/tyv3_94-91.weights", "~/darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg")
     #net = cv2.dnn.readNetFromDarknet("~/darknet_training/doubleclass/backup/yolov3-tiny_3l_final.weights", "~/darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg")
-    net = cv2.dnn.readNetFromDarknet("../darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg","../darknet_training/doubleclass/backup/yolov3-tiny_3l_final.weights")
+    net = cv2.dnn.readNetFromDarknet("../darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg","../darknet_training/doubleclass/backup/yolov3-tiny_3l_best.weights")
 
-    classes = ['ball','robot']
+    #classes = ['ball','robot']
+    classes = [0,1]
     layers_names = net.getLayerNames()
     output_layers = [layers_names[i[0]-1] for i in net.getUnconnectedOutLayers()]
     colors = np.random.uniform(0, 255, size=(len(classes), 3))
     return net, classes, colors, output_layers
+
+
 
 
 def evaluate_fn(eval_loader, model, scaled_anchors):
@@ -74,6 +78,16 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).unsqueeze(1).repeat(1, 3, 2)
     ).to(config.DEVICE)
     print(config.DEVICE)
+
+    pred_boxes_darknet, true_boxes_darknet = get_evaluation_bboxes_darknet(
+                eval_loader,
+                dnmodel,
+                outlayers,
+                iou_threshold=config.NMS_IOU_THRESH,
+                anchors=config.ANCHORS,
+                threshold=config.CONF_THRESHOLD,
+            )
+
 
     pred_boxes, true_boxes = get_evaluation_bboxes(
                 eval_loader,
