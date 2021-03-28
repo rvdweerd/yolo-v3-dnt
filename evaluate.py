@@ -25,13 +25,14 @@ from loss import YoloLoss
 import cv2
 import numpy as np
 
+
 torch.backends.cudnn.benchmark = True
 
 def load_dn():
 	#net = cv2.dnn.readNet("~/darknet_training/doubleclass/backup/tyv3_94-91.weights", "~/darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg")
     #net = cv2.dnn.readNetFromDarknet("~/darknet_training/doubleclass/backup/yolov3-tiny_3l_final.weights", "~/darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg")
     net = cv2.dnn.readNetFromDarknet("../darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg","../darknet_training/doubleclass/backup/yolov3-tiny_3l_best.weights")
-
+    #net = cv2.dnn.readNetFromDarknet("../darknet_training/doubleclass/cfg/yolov3-tiny_3l.cfg","../darknet_training/doubleclass/backup/tyv3_94-91.weights")
     #classes = ['ball','robot']
     classes = [0,1]
     layers_names = net.getLayerNames()

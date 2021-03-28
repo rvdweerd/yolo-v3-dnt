@@ -10,6 +10,7 @@ from collections import Counter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import cv2
+from PIL import Image
 
 def iou_width_height(boxes1, boxes2):
     """
@@ -454,11 +455,18 @@ def get_evaluation_bboxes_darknet(
     all_true_boxes = []
     model.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 
-    examples=[
-        "frame_a_910.png","frame_a_1070.png","frame_a_2810.png","frame_a_3040.png",
-        "frame_a_3710.png","frame_a_8240.png","frame_b_1880.png","image12.jpg",
-        "image21.jpg","image113.jpg","image50167.jpg","image90178.jpg"
-        ]
+    # examples=[
+    #     "frame_a_910.png","01_06_2018__17_17_01_0000_upper.png","frame_a_1070.png","frame_a_2810.png","frame_a_3040.png",
+    #     "frame_a_3710.png","frame_a_8240.png","frame_b_1880.png","image12.jpg",
+    #     "image21.jpg","image113.jpg","image50167.jpg","image90178.jpg"
+    #     ]
+    examples=[]
+    file_obj=open("DNT_2/train.csv")
+    lines=file_obj.readlines()
+    for line in lines[1:]:
+       a,b=line.split(",")
+       examples.append(a)
+    examples.sort()
 
     def trackbar2(x):
         confidence = x/100
@@ -475,33 +483,62 @@ def get_evaluation_bboxes_darknet(
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     
-    for ex in examples:
-
+    if not os.path.isdir('test_examples'):
+        os.mkdir('test_examples')
+    show_pipeline=True
+    record=False
+    if record:
+        VID_w=832#640
+        VID_h=728#480
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video=cv2.VideoWriter('test_examples/video.avi', fourcc, 2,(VID_w,VID_h))
+    
+    for ex in (examples[3:]):
         #img=cv2.imread("DNT_2/images/frame_a_2760.png")
         img=cv2.imread("DNT_2/images/"+ex)
-        cv2.imshow('window',  img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
 
-        img = cv2.resize(img, None, fx=416/640, fy=416/640)
-        img=cv2.copyMakeBorder(img,0,416-312,0,0,cv2.BORDER_CONSTANT)
+        # Using PIL (https://github.com/AlexeyAB/darknet/issues/3119#issuecomment-506673120)
+        #img=Image.open("DNT_2/images/"+ex)
+        #img=img.resize((416,416),Image.BICUBIC).convert('RGB')
 
-        blob = cv2.dnn.blobFromImage(img, 1/255.0, (416, 416), swapRB=True, crop=False)
+
+        if show_pipeline:
+            #print('step1: img size',img.shape)
+            cv2.imshow('window',  img)
+            #cv2.imwrite('test_examples/ex'+str(idx)+'-1_orig_-'+ex,img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        #img = cv2.resize(img, None, fx=416/640, fy=416/640)
+        #img = cv2.resize(img, None, fx=416/832, fy=416/832)
+        #img=cv2.copyMakeBorder(img,0,416-312,0,0,cv2.BORDER_CONSTANT)
+        
+        #h,w,c=img.shape
+        #img=cv2.resize(img,None,fx=416/w,fy=416/h,interpolation=cv2.INTER_CUBIC)
+        
+        
+        img=cv2.resize(img,(416,416),interpolation=cv2.INTER_CUBIC)
+        blob = cv2.dnn.blobFromImage(img, 1/255.0, (416, 416),(0,0,0),swapRB=True, crop=False)
         r=blob[0,0,:,:]
         text = f'Blob shape={blob.shape}'
-        cv2.imshow('blob',  r)
-        cv2.displayOverlay('blob', text)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        
+        if show_pipeline:
+            print('step2: blob size',r.shape)
+            cv2.imshow('blob',  r)
+            cv2.displayOverlay('blob', text)
+            #cv2.imwrite('test_examples/ex'+str(idx)+'-2_blob_-'+ex,img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        print(ex,'blob size',blob.shape, 'avg',blob.mean(),'max',blob.max())
         model.setInput(blob)
         outputs=model.forward(outputLayers)
 
         r0 = blob[0, 0, :, :]
         r = r0.copy()
-        cv2.imshow('blob', r)
-        cv2.createTrackbar('confidence', 'blob', 50, 101, trackbar2)
-        trackbar2(50)
+        if show_pipeline:
+            print('step3: blob size',r.shape)
+            cv2.imshow('blob', r)
+            cv2.createTrackbar('confidence', 'blob', 50, 101, trackbar2)
+            trackbar2(50)
 
         boxes = []
         confidences = []
@@ -532,11 +569,19 @@ def get_evaluation_bboxes_darknet(
                 cv2.rectangle(img, (x, y), (x + w, y + h), color, 2)
                 text = "{}: {:.4f}".format(classes[classIDs[i]], confidences[i])
                 cv2.putText(img, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-
-        cv2.imshow('window', img)
-        cv2.waitKey(0)
+        if record:
+            h,w,c=img.shape
+            img_=cv2.copyMakeBorder(img,0,VID_h-h,0,VID_w-w,cv2.BORDER_CONSTANT)
+            video.write(img_)
+            print('written',ex)
+        if show_pipeline:
+            print('step4: img size',img.shape)
+            cv2.imshow('window', img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+    if record:
         cv2.destroyAllWindows()
-
+        video.release()
     return [],[]
 
 
