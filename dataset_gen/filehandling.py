@@ -1,9 +1,10 @@
 import os
 
 create_annotations=True
-create_video=True
+create_video=False
 
-annotation_file="dataset_gen/annotations_twig_correct.txt"
+#annotation_file="dataset_gen/annotations_twig_correct.txt"
+annotation_file="dataset_gen/annotations_all_new.txt"
 
 if create_annotations:
     file_obj = open(annotation_file,"r")
